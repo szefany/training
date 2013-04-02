@@ -1,0 +1,11 @@
+
+input
+output
+
+*.in
+*.out
+*.txt
+
+*.class
+*~
+
