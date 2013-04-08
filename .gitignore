@@ -1,5 +1,7 @@
 input
 output
+test
+temp
 
 *.in
 *.out
@@ -10,3 +12,4 @@ output
 *~
 
 [A-Z]
+[A-Z][0-9]
