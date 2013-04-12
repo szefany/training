@@ -3,14 +3,14 @@
 #include "cstdio"
 using namespace std;
 typedef long long LOL;
-const LOL MOD = 1000000007LL;
-const LOL MOD1 = MOD-1;
+const LOL MOD=1000000007ll;
+const LOL MOD1=MOD-1;
 const int N = 510;
-int vis[20];
 char s1[N],s2[N];
-LOL c[N][N];
-int a[N];
+int num[20],tt[20];
 LOL pmod[N],psmod[N];
+LOL c1[N][N],c2[N][N];
+int a[N];
 LOL extendGCD(LOL a,LOL b,LOL &x,LOL &y)
 {
 	if(!b) return x=1,y=0,a;
@@ -22,94 +22,82 @@ LOL inverse(LOL a,LOL p)
 {
 	LOL x,y;
 	y=extendGCD(a,p,x,y);
-	return x<0?x+=p:x;
+	return x<0?x+p:x;
 }
+
 LOL getnum(LOL mod)
 {
-	int tx=0;
-	for(int j=1;j<=9;j++){
-		tx+=vis[j];
+	int sum=0;
+	for(int i=1;i<=9;i++){
+		sum+=num[i];
 	}
-	LOL tmp=1;
-	for(int j=1;j<=9;j++){
-		tmp*=c[tx][vis[j]];
-		tmp%=mod;
-		tx-=vis[j];
+	LOL ans=1;
+	for(int i=1;i<=9;i++){
+		if(mod==MOD){
+			ans=(ans*c1[sum][num[i]])%mod;
+		}else{
+			ans=(ans*c2[sum][num[i]])%mod;
+		}
+		sum-=num[i];
 	}
-	return tmp;
+	return ans;
 }
 LOL gaonum(int l,LOL mod)
 {
-	if(l==0){
-		return 1;
-	}
+	if(l==0)	return 1;
 	LOL sum=0;
 	for(int i=1;i<a[l];i++){
-		if(vis[i]>0){
-			vis[i]--;
-			sum+=getnum(mod);
-			vis[i]++;
-		}
+		num[i]--;
+		sum+=getnum(mod);
+		num[i]++;
 	}
-	vis[a[l]]--;
+	num[a[l]]--;
 	return sum+gaonum(l-1,mod);
 }
 LOL getsum()
 {
-	int tx=0;
+	int sum=0;
 	for(int i=1;i<=9;i++){
-		tx+=vis[i];
+		sum+=num[i];
 	}
-	LOL tmp=1;
-	int ttx=tx;
+	LOL ans=1;
+	int tmp=sum;
 	for(int i=1;i<=9;i++){
-		tmp=(tmp*c[tx][vis[i]])%MOD;
-		tx-=vis[i];
+		ans=(ans*c1[sum][num[i]])%MOD;
+		sum-=num[i];
 	}
-	LOL sum=0;
+	sum=tmp;
+	LOL now=(psmod[sum]*inverse(sum,MOD))%MOD;
+	LOL all_ans=0;
 	for(int i=1;i<=9;i++){
-		LOL ty=tmp*vis[i]%MOD;
-		ty=(ty*psmod[ttx])%MOD;
-		ty=(ty*inverse(ttx,MOD))%MOD;
-		ty*=i;
-		sum+=ty;
+		LOL tans=(ans*num[i]*i)%MOD*now;
+		tans%=MOD;
+		all_ans=(all_ans+tans)%MOD;
 	}
-	return sum;
+	return all_ans;
 }
-LOL gaosum(int l)
+void solve(int l,LOL &ans_num,LOL &ans_sum)
 {
 	if(l==0){
-		return 0;
+		ans_num=1,ans_sum=0;
+		return ;
 	}
-	LOL sum=0;
+	LOL tmp_num=0,tmp_sum=0;
 	for(int i=1;i<a[l];i++){
-		if(vis[i]>0){
-			vis[i]--;
-			sum=sum+getsum()+i*pmod[l]*getnum(MOD);
-			sum%=MOD;
-			vis[i]++;
-			
+		if(num[i]>0){
+			num[i]--;
+			LOL tmp=getnum(MOD);
+			tmp_num=(tmp_num+tmp)%MOD;
+			tmp_sum=(tmp_sum+getsum()+i*pmod[l]*tmp)%MOD;
+			num[i]++;
 		}
 	}
-	vis[a[l]]--;
-	sum+=a[l]*pmod[l]*gaonum(l-1,MOD);
-	return sum+gaosum(l-1);
-}	
-bool check()
-{
-	int len=strlen(s1);
-	for(int i=0;i<len;i++){
-		if(s1[i]>s2[i]){
-			return 1;
-		}else if(s1[i]==s2[i]){
-			continue;
-		}else{
-			return 0;
-		}
-	}
-	return 1;
+	num[a[l]]--;
+	LOL tx=0,ty=0;
+	solve(l-1,tx,ty);
+	ans_num=(tmp_num+tx)%MOD;
+	ans_sum=(tmp_sum+ty+a[l]*pmod[l]*tx)%MOD;
 }
-int tvis[20];
 LOL qmod(LOL a,LOL b)
 {
 	LOL sum=1;
@@ -125,11 +113,13 @@ LOL qmod(LOL a,LOL b)
 int main(void)
 {
 	for(int i=0;i<=500;i++){
-		c[i][0]=1;
+		c1[i][0]=1;
+		c2[i][0]=1;
 	}
 	for(int i=1;i<=500;i++){
 		for(int j=1;j<=i;j++){
-			c[i][j]=(c[i-1][j-1]+c[i-1][j])%MOD;
+			c1[i][j]=(c1[i-1][j-1]+c1[i-1][j])%MOD;
+			c2[i][j]=(c2[i-1][j-1]+c2[i-1][j])%MOD1;
 		}
 	}
 	pmod[1]=1;psmod[1]=1;
@@ -138,63 +128,52 @@ int main(void)
 		psmod[i]=(psmod[i-1]+pmod[i])%MOD;
 	}
 	for(int i=1;i<=9;i++){
-		scanf("%d",&vis[i]);
-	}
-	for(int i=1;i<=9;i++){
-		tvis[i]=vis[i];
+		scanf("%d",&tt[i]);
 	}
 	int Q;
 	scanf("%d",&Q);
-	for(int i=1;i<=Q;i++){
+	while(Q--){
 		scanf("%s %s",s1,s2);
-		LOL num1=0,sum1=0,num2=0,sum2=0,num=0,sum=0;
 		int len=strlen(s1);
-		for(int j=len;j>=1;j--){
-			a[j]=s1[len-j]-'0';
-		}		
-		for(int i=1;i<=9;i++){
-			vis[i]=tvis[i];
+		LOL num1=0,num2=0,sum1=0,sum2=0,anum=0,sum=0;
+		for(int i=len;i>=1;i--){
+			a[i]=s1[len-i]-'0';
 		}
-		num1+=gaonum(len,MOD1);	
 		for(int i=1;i<=9;i++){
-			vis[i]=tvis[i];
-		}	
-		sum1+=gaosum(len);
-		for(int j=len;j>=1;j--){
-			a[j]=s2[len-j]-'0';
-		}		
+			num[i]=tt[i];
+		}
+		num1=gaonum(len,MOD1);
+		LOL tmp=0;
 		for(int i=1;i<=9;i++){
-			vis[i]=tvis[i];
+			num[i]=tt[i];
 		}
-		num2+=gaonum(len,MOD1);
+		solve(len,tmp,sum1);
+		for(int i=len;i>=1;i--){
+			a[i]=s2[len-i]-'0';
+		}
 		for(int i=1;i<=9;i++){
-			vis[i]=tvis[i];
+			num[i]=tt[i];
 		}
-		sum2+=gaosum(len);
-		if(check()){
-			num=num1-num2+1;
-			sum=sum1-sum2;
-			LOL tmp=0;
-			for(int j=0;j<len;j++){
-				tmp=tmp*10+s2[j]-'0';
-				tmp%=MOD;
-			}
-			sum+=tmp;
-		}else{
-			num=num2-num1+1;
-			sum=sum2-sum1;
-			LOL tmp=0;
-			for(int j=0;j<len;j++){
-				tmp=tmp*10+s1[j]-'0';
-				tmp%=MOD;
-			}
-			sum+=tmp;
+		num2=gaonum(len,MOD1);
+		tmp=0;
+		for(int i=1;i<=9;i++){
+			num[i]=tt[i];
 		}
-		num=(num%MOD1+MOD1)%MOD1;
-		num=qmod(2,num);
-		num=(num*inverse(4,MOD)%MOD);
+		solve(len,tmp,sum2);
+		anum=num1-num2+1;
+		sum=sum1-sum2;
+		tmp=0;
+		for(int j=0;j<len;j++){
+			tmp=tmp*10+s2[j]-'0';
+			tmp%=MOD;
+		}
+		sum+=tmp;
+		anum=(anum%MOD1+MOD1)%MOD1;
+		anum=qmod(2,anum);
+		anum=(anum*inverse(4,MOD)%MOD);
 		sum=(sum%MOD+MOD)%MOD;
-		printf("%lld %lld\n",num,(num*sum)%MOD);
+		
+		printf("%lld %lld\n",anum,(anum*sum)%MOD);
 	}
 	return 0;
 }
