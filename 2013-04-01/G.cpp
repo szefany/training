@@ -1,156 +1,104 @@
-#include <cstdio>
-#include <cstring>
-#include <iostream>
-#include <vector>
-#include <algorithm>
-
-const int L = 1000 + 1;
-const int N = 10000 + 10;
-const int M = (1000000 + 1) << 1;
-
-std::vector<int> neighbors[N];
-
-char string[N][L];
-int root[N], length[N], degree[N], rank[N];
-int n, size;
-
-int step[M], prev[M], children[M][26];
-
-void clear(int u) {
-	memset(children[u], 0, sizeof(children[u]));
-	prev[u] = step[u] = 0;
-}
-
-void initialise() {
-	for (int i = 0; i < n; ++ i) {
-		neighbors[i].clear();
-		root[i] = degree[i] = 0;
+//AC
+#include "iostream"
+#include "cstring"
+#include "cstdio"
+#include "string"
+#include "algorithm"
+#include "queue"
+#define PB push_back
+using namespace std;
+const int N = 10010;
+const int M = 1000010;
+const int CH=26;
+string s[N];
+int trie[M][26],loc;
+int fail[M];
+int dp[N];
+int word[M];
+bool cmp(string a,string b)
+{
+	if(a.size()==b.size()){
+		return a<b;
 	}
-	size = 0;
-	clear(0);
+	return a.size()<b.size();
 }
-
-void move_to(int u, int v) {
-	prev[v] = prev[u];
-	step[v] = step[u];
-	memcpy(children[v], children[u], sizeof(children[u]));
-}
-
-void build(int &r, int index) {
-	r = ++ size;
-	clear(size);
-	for (int i = 0, last = r, u, node; i < length[index]; ++ i, last = u) {
-		int key = string[index][i] - 'a';
-		u = ++ size;
-		clear(u);
-		step[u] = step[last] + 1;
-		for (node = last; node && children[node][key] == 0; node = prev[node]) {
-			children[node][key] = u;
+void insert(string s,int x)
+{
+	int r=0;
+	int len=s.size();
+	for(int i=0;i<len;i++){
+		int idx=s[i]-'a';
+		if(trie[r][idx]){
+			r=trie[r][idx];
+		}else{
+			trie[r][idx]=++loc;
+			r=loc;
 		}
-		if (node == 0) {
-			prev[u] = r;
-			continue;
+	}
+	word[r]=x;
+}	
+void ac()
+{
+	queue<int> que;
+	for(int i=0;i<CH;i++){
+		if(trie[0][i]){
+			fail[trie[0][i]]=0;
+			que.push(trie[0][i]);
 		}
-		int v = children[node][key];
-		if (step[v] == step[node] + 1) {
-			prev[u] = v;
-		} else {
-			int nv = ++ size;
-			move_to(v, nv);
-			step[nv] = step[node] + 1;
-			prev[u] = prev[v] = nv;
-			for (; node && children[node][key] == v; node = prev[node]) {
-				children[node][key] = nv;
+	}
+	while(!que.empty()){
+		int tmp=que.front();
+		word[tmp]=max(word[tmp],word[fail[tmp]]);
+		que.pop();
+		for(int i=0;i<CH;i++){
+			int u=trie[tmp][i];
+			if(u){
+				fail[u]=trie[fail[tmp]][i];
+				que.push(u);
+			}else{
+				trie[tmp][i]=trie[fail[tmp]][i];
 			}
 		}
 	}
 }
-
-bool cmp(int x, int y) {
-	return length[x] < length[y];
-}
-
-int queue[N], dist[N];
-bool in_queue[N];
-
-bool match(int x, int y) {
-	for (int i = 0, u = root[y], cover = 0; i < length[x]; ++ i) {
-		int key = string[x][i] - 'a';
-		if (children[u][key]) {
-			u = children[u][key];
-			cover ++;
-		} else {
-			while (u && children[u][key] == 0) {
-				u = children[u][key];
-			}
-			if (u == 0) {
-				u = root[y];
-				cover = 0;
-			} else {
-				cover = step[u] + 1;
-				u = children[u][key];
-			}
-		}
-		if (cover == length[x]) {
-			return true;
+int getsum(string s,int x)
+{
+	int len=s.size();
+	int sum=0;
+	int r=0;
+	for(int i=0;i<len;i++){
+		int idx=s[i]-'a';
+		r=trie[r][idx];
+		sum=max(sum,dp[word[r]]);
+		if(i==len-1){
+			sum=max(sum,dp[word[fail[r]]]);
 		}
 	}
-	return false;
+	return sum+1;
 }
-
-int main() {
-	freopen("input", "r", stdin);
-	while (scanf("%d", &n) != EOF && n > 0) {
-		initialise();
-		for (int i = 0; i < n; ++ i) {
-			scanf("%s", string[i]);
-			length[i] = strlen(string[i]);
-			build(root[i], i);
-			rank[i] = i;
+int main(void)
+{
+	int n;
+	while(scanf("%d",&n)&&n){
+		for(int i=1;i<=n;i++){
+			cin>>s[i];
 		}
-		std::sort(rank, rank + n, cmp);
-		for (int i = 0; i < n; ++ i) {
-			int u = rank[i];
-			for (int j = i + 1; j < n; ++ j) {
-				int v = rank[j];
-				if (match(u, v)) {
-					neighbors[u].push_back(v);
-					degree[v] ++;
-					// printf("%d %d\n", u, v);
-				}
-			}
+		loc=0;
+		memset(trie,0,sizeof(trie));
+		memset(word,0,sizeof(word));
+		memset(dp,0,sizeof(dp));
+		sort(s+1,s+1+n,cmp);
+		for(int i=1;i<=n;i++){
+			if(i==1||s[i]!=s[i-1])
+			insert(s[i],i);
 		}
-
-		int tail = 0;
-		for (int i = 0; i < n; ++ i) {
-			dist[i] = -1 << 21;
-			in_queue[i] = false;
-			if (degree[i] == 0) {
-				queue[++ tail] = i;
-				dist[i] = 1;
-				in_queue[i] = true;
-			}
+		ac();
+		int ans=1;
+		for(int i=1;i<=n;i++){
+			dp[i]=getsum(s[i],i);
+			ans=max(ans,dp[i]);
 		}
-		
-		const int Q = N - 1;
-		int answer = 1, head = 0;
-		for (int head = 1; head <= tail; ++ head) {
-			int u = queue[head];
-			in_queue[u] = false;
-			if (dist[u] > answer) {
-				answer = dist[u];
-			}
-			for (int i = 0; i < neighbors[u].size(); ++ i) {
-				int v = neighbors[u][i];
-				degree[v] --;
-				if (degree[v] == 0) {
-					dist[v] = dist[u] + 1;
-					in_queue[v] = true;
-					queue[++ tail] = v;
-				}
-			}
-		}
-		printf("%d\n", answer);
+		printf("%d\n",ans);
 	}
 	return 0;
 }
