@@ -1,84 +1,73 @@
-#include "iostream"
-#include "cstring"
-#include "cstdio"
-#include "vector"
-#include "queue"
-#define PB push_back
-#define MP make_pair
-using namespace std;
-const int N = 110;
-const int Mod = 100000000;
-const int inf = 0x3ffffff;
-int a[N][2];
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+
+const int N = 200 + 1;
+const int MOD = 100000000;
+
+struct Segment {
+	int left, right;
+	bool operator < (const Segment &other) const {
+		return right < other.right || right == other.right && left > other.left;
+	}
+} segments[N];
+
+int n, top;
 int dp[N][N];
-int d[N];
-vector<int> edge[N];
-int main(void)
-{
-	int n,m;
-	while(scanf("%d%d",&m,&n)&&(n||m)){
-		for(int i=1;i<=n;i++){
-			scanf("%d%d",&a[i][0],&a[i][1]);
+std::vector<int> total;
+
+int main() {
+	freopen("input", "r", stdin);
+	while (scanf("%d%d", &top, &n) && n + top > 0) {
+		total.clear();
+		for (int i = 1; i <= n; ++ i) {
+			scanf("%d%d", &segments[i].left, &segments[i].right);
+			total.push_back(segments[i].left);
+			total.push_back(segments[i].right);
 		}
-		int num = n+2;
-		for(int i=0;i<num;i++){
-			edge[i].clear();
+		total.push_back(0);
+		total.push_back(top);
+		std::sort(total.begin(), total.end());
+		total.resize(unique(total.begin(), total.end()) - total.begin());
+		
+		for (int i = 1; i <= n; ++ i) {
+			segments[i].left = std::lower_bound(total.begin(), total.end(), segments[i].left) - total.begin(); 
+			segments[i].right = std::lower_bound(total.begin(), total.end(), segments[i].right) - total.begin();
 		}
-		memset(d,0,sizeof(d));
-		memset(dp,0,sizeof(dp));
-		for(int i=1;i<=n;i++){
-			if(a[i][0]==0){
-				edge[0].PB(i);
-				d[i]++;
+		std::sort(segments + 1, segments + n + 1);
+		/*
+		for (int i = 1; i <= n; ++ i) {
+			printf("%d %d\n", segments[i].left, segments[i].right);
+		}*/
+		
+		segments[0].right = segments[0].left = -1;
+		memset(dp, 0, sizeof(dp));
+		for (int i = 1; i <= n; ++ i) {	
+			if (segments[i].left == 0) {
+				dp[i][0] ++;
 			}
-			if(a[i][1]==m){
-				edge[i].PB(n+1);
-				d[n+1]++;
-			}
-			for(int j=1;j<=n;j++){
-				if(i==j) continue;
-				if(a[j][0]<=a[i][1]&&a[j][0]>a[i][0]&&a[j][1]>a[i][1]){
-					edge[i].PB(j);
-					d[j]++;
+			for (int j = 1; j < i; ++ j) {
+				if (segments[j].left >= segments[i].left || segments[j].right < segments[i].left || (segments[i].right == segments[j].right && segments[j].left <= segments[i].left)) {
+					continue;
 				}
-			}
-		}
-		queue<int> que;
-		for(int i=0;i<edge[0].size();i++){
-			int u=edge[0][i];
-			dp[u][0]=1;
-			d[u]--;
-			if(d[u]==0){
-				que.push(u);
-			}
-		}
-		while(!que.empty()){
-			int u=que.front();
-			que.pop();
-			for(int i=0;i<edge[u].size();i++){
-				int x=edge[u][i];
-				for(int j=0;j<num;j++){
-					if(a[x][0]>a[j][1]&&dp[u][j]){						
-						dp[x][u]+=dp[u][j];
-						dp[x][u]%=Mod;
+				for (int k = 0; k < j; ++ k) {
+					if (k == 0 && segments[i].left != 0 || segments[k].right >= segments[j].left && segments[k].right < segments[i].left && segments[k].left < segments[j].left) {
+			//			printf("%d %d %d\n",i, j, k);
+						(dp[i][j] += dp[j][k]) %= MOD;
 					}
 				}
-				d[x]--;
-				if(d[x]==0){
-					que.push(x);
+			}
+		}
+		int answer = 0;
+		for (int i = 1; i <= n; ++ i) {
+			if (segments[i].right == total.size() - 1) {
+				for (int j = 0; j < i; ++ j) {
+					(answer += dp[i][j]) %= MOD;
 				}
 			}
 		}
-		int sum=0;
-		for(int i=1;i<=n;i++){
-			if(a[i][1]==m){
-				for(int j=0;j<num;j++){
-					sum+=dp[i][j];
-					sum%=Mod;
-				}
-			}
-		}
-		printf("%d\n",sum);
+		printf("%d\n", answer);
 	}
 	return 0;
 }
