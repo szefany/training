@@ -50,13 +50,12 @@ int main() {
 					k = queue[head + 1];
 					dp[i][j] = std::min(dp[i][j], dp[k][j - 1] + g[k] - x[i] * s[k] + temp);
 				}
-				while (tail - 2 >= head) {
-					int h0 = queue[tail - 2];
-					int h1 = queue[tail - 1];
-					int h2 = i;
-					if (calc(h0, h1, j) >= calc(h1, h2, j)) {
-						tail --;
-					} else {
+				while(tail-1>=head){
+					int h0 = queue[tail-1];
+					int h1 = i;
+					if(calc(h0,h1,j)<=x[i]){
+						tail--;
+					}else{
 						break;
 					}
 				}
